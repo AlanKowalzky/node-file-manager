@@ -89,11 +89,23 @@ async function handleInput(line) {
   } else if (trimmed === 'ls') {
     try {
       const files = await fs.readdir(currentDir, { withFileTypes: true });
-      const folders = files.filter(f => f.isDirectory()).map(f => f.name).sort();
-      const regularFiles = files.filter(f => f.isFile()).map(f => f.name).sort();
-      console.log('Type       Name');
-      folders.forEach(name => console.log('DIR        ' + name));
-      regularFiles.forEach(name => console.log('FILE       ' + name));
+      const entries = files
+        .map(f => ({
+          name: f.name,
+          type: f.isDirectory() ? 'DIR' : f.isFile() ? 'FILE' : 'OTHER'
+        }))
+        .filter(e => e.type === 'DIR' || e.type === 'FILE') // Pokaż tylko pliki i foldery
+        .sort((a, b) => {
+          // Najpierw foldery, potem pliki, alfabetycznie w każdej grupie
+          if (a.type === b.type) {
+            return a.name.localeCompare(b.name);
+          }
+          return a.type === 'DIR' ? -1 : 1;
+        });
+
+      console.log('Type   Name');
+      console.log('----   ----');
+      entries.forEach(entry => console.log(`${entry.type.padEnd(4)}   ${entry.name}`));
     } catch {
       console.log('Operation failed');
     }
