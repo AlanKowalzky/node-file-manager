@@ -32,6 +32,45 @@ function printGoodbye() {
   console.log(`Thank you for using File Manager, ${username}, goodbye!`);
 }
 
+// Funkcja do rysowania tabeli ASCII
+function printAsciiTable(entries) {
+  if (!entries.length) {
+    console.log('Directory is empty.'); // Zmieniono wiadomość
+    return;
+  }
+
+  // Sprawdź, czy jakikolwiek wpis ma rozmiar (czy to nie tylko katalogi)
+  const hasSize = entries.some(e => e.size !== undefined && e.size !== null);
+  // Oblicz maksymalne długości dla nazw i rozmiarów (minimum 4 znaki dla nagłówków)
+  const maxNameLen = Math.max(...entries.map(e => e.name.length), 4);
+  const maxSizeLen = hasSize ? Math.max(...entries.map(e => (e.size?.toString().length || 0)), 4) : 0;
+
+  // Zbuduj linie tabeli
+  const header = hasSize
+    ? `┌──────┬─${'─'.repeat(maxSizeLen)}─┬─${'─'.repeat(maxNameLen)}─┐`
+    : `┌──────┬─${'─'.repeat(maxNameLen)}─┐`;
+  const titles = hasSize
+    ? `│ Type │ Size${' '.repeat(maxSizeLen - 4)} │ Name${' '.repeat(maxNameLen - 4)} │`
+    : `│ Type │ Name${' '.repeat(maxNameLen - 4)} │`;
+  const divider = hasSize
+    ? `├──────┼─${'─'.repeat(maxSizeLen)}─┼─${'─'.repeat(maxNameLen)}─┤`
+    : `├──────┼─${'─'.repeat(maxNameLen)}─┤`;
+  const footer = hasSize
+    ? `└──────┴─${'─'.repeat(maxSizeLen)}─┴─${'─'.repeat(maxNameLen)}─┘`
+    : `└──────┴─${'─'.repeat(maxNameLen)}─┘`;
+
+  console.log(header);
+  console.log(titles);
+  console.log(divider);
+  entries.forEach(e => {
+    const paddedName = e.name.padEnd(maxNameLen);
+    const paddedType = e.type.padEnd(4);
+    const sizeStr = hasSize ? (e.size !== undefined && e.size !== null ? e.size.toString().padStart(maxSizeLen) : ''.padStart(maxSizeLen)) : '';
+    console.log(hasSize ? `│ ${paddedType} │ ${sizeStr} │ ${paddedName} │` : `│ ${paddedType} │ ${paddedName} │`);
+  });
+  console.log(footer);
+}
+
 // Obsługa zakończenia programu
 process.on('SIGINT', () => {
   printGoodbye();
@@ -89,24 +128,39 @@ async function handleInput(line) {
   } else if (trimmed === 'ls') {
     try {
       const files = await fs.readdir(currentDir, { withFileTypes: true });
-      const entries = files
-        .map(f => ({
+
+      // Pobierz statystyki dla wszystkich plików/katalogów, aby dodać rozmiar
+      const entriesPromises = files.map(async (f) => {
+        const entryPath = path.join(currentDir, f.name);
+        let stats = null;
+        try {
+          // Użyj lstat, aby nie podążać za linkami symbolicznymi
+          stats = await fs.lstat(entryPath);
+        } catch (statError) {
+          // Ignoruj błędy dla pojedynczych plików (np. brak uprawnień)
+        }
+        return {
           name: f.name,
-          type: f.isDirectory() ? 'DIR' : f.isFile() ? 'FILE' : 'OTHER'
-        }))
+          type: stats?.isDirectory() ? 'DIR' : stats?.isFile() ? 'FILE' : 'OTHER',
+          size: stats?.isFile() ? stats.size : null // Rozmiar tylko dla plików
+        };
+      });
+
+      const entriesWithStats = await Promise.all(entriesPromises);
+
+      const entries = entriesWithStats
         .filter(e => e.type === 'DIR' || e.type === 'FILE') // Pokaż tylko pliki i foldery
         .sort((a, b) => {
-          // Najpierw foldery, potem pliki, alfabetycznie w każdej grupie
-          if (a.type === b.type) {
-            return a.name.localeCompare(b.name);
+          // Sortuj: Najpierw foldery, potem pliki, alfabetycznie w każdej grupie
+          if (a.type !== b.type) {
+            return a.type === 'DIR' ? -1 : 1;
           }
-          return a.type === 'DIR' ? -1 : 1;
+          return a.name.localeCompare(b.name);
         });
 
-      console.log('Type   Name');
-      console.log('----   ----');
-      entries.forEach(entry => console.log(`${entry.type.padEnd(4)}   ${entry.name}`));
-    } catch {
+      // Użyj nowej funkcji do wyświetlenia tabeli
+      printAsciiTable(entries);
+    } catch (err) { // Złap potencjalne błędy readdir itp.
       console.log('Operation failed');
     }
     printCurrentDir();
