@@ -3,6 +3,7 @@ import * as files from './basic.js';
 import * as osCmd from './os.js';
 // import * as hashCmd from './hash.js'; // TODO: Stworzyć plik hash.js i odkomentować ten import
 import * as compressCmd from './compress.js';
+import * as meta from './meta.js'; // Importuj nowy moduł meta
 
 import { printInvalidInput, printError } from '../cli/ui.js';
 
@@ -26,6 +27,8 @@ const commandMap = {
   // Compress/Decompress
   compress: compressCmd.compressFile,
   decompress: compressCmd.decompressFile,
+  // Meta
+  help: meta.showHelp,
 };
 
 export async function handleCommand(line) {
