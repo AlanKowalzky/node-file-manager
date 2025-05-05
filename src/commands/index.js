@@ -1,5 +1,6 @@
-import * as nwd from './nwd.js';
+import * as nwd from './nwd.js'
 import * as basic from './basic.js';
+
 import * as osCmd from './os.js';
 // Importuj inne moduły komend (hash, compress), gdy będą gotowe
 

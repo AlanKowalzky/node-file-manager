@@ -15,7 +15,7 @@ export async function readFileContent(args) {
     const readableStream = createReadStream(filePath, { encoding: 'utf8' });
     readableStream.on('data', (chunk) => process.stdout.write(chunk));
     await new Promise((resolve, reject) => {
-        readableStream.on('end', () => { console.log(); resolve(); }); // Dodaj nową linię na końcu
+        readableStream.on('end', () => { console.log(); resolve(undefined); }); // Dodaj nową linię na końcu
         readableStream.on('error', reject);
     });
   } catch (err) {
