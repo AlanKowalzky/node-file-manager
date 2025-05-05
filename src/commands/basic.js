@@ -4,6 +4,7 @@ import { createReadStream, createWriteStream } from 'fs';
 import { pipeline } from 'stream/promises';
 import { get } from '../state.js';
 import { printError } from '../cli/ui.js';
+import { parseArgsWithQuotes } from '../utils/helpers.js'; // Import helper
 
 export async function readFileContent(args) {
   const filePathArg = args.join(' ').trim();
@@ -59,18 +60,11 @@ export async function createDirectory(args) {
 }
 
 export async function renameFile(args) {
-  // Proste parsowanie, zakładając, że nazwy nie mają spacji lub są w cudzysłowach
-  // Lepsze byłoby użycie biblioteki do parsowania argumentów, ale trzymamy się braku zależności
-  const combinedArgs = args.join(' ');
-  // Regex to split by space, but respect quotes
-  const parts = combinedArgs.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g) || [];
+  const parsedArgs = parseArgsWithQuotes(args, 2, 'Invalid input: Expected rn <path_to_file> <new_filename>');
+  if (!parsedArgs) return; // Error already printed by helper
 
-  if (parts.length !== 2) {
-    return printError('Invalid input: Expected rn <path_to_file> <new_filename>');
-  }
+  const [oldPathArg, newName] = parsedArgs;
 
-  const oldPathArg = parts[0].replace(/['"]/g, ''); // Remove quotes
-  const newName = parts[1].replace(/['"]/g, '');
 
   if (!oldPathArg || !newName) return printError('Invalid input: Missing arguments for rn');
 
@@ -86,47 +80,62 @@ export async function renameFile(args) {
 }
 
 export async function copyFileCmd(args) { // Zmieniona nazwa na copyFileCmd
-  const combinedArgs = args.join(' ');
-  const parts = combinedArgs.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g) || [];
+  const parsedArgs = parseArgsWithQuotes(args, 2, 'Invalid input: Expected cp <path_to_file> <path_to_new_directory>');
+  if (!parsedArgs) return;
 
-  if (parts.length !== 2) {
-    return printError('Invalid input: Expected cp <path_to_file> <path_to_new_directory>');
-  }
+  const [sourcePathArg, destArg] = parsedArgs; // Renamed second arg for clarity
 
-  const sourcePathArg = parts[0].replace(/['"]/g, '');
-  const destDirArg = parts[1].replace(/['"]/g, '');
-
-  if (!sourcePathArg || !destDirArg) return printError('Invalid input: Missing arguments for cp');
+  if (!sourcePathArg || !destArg) return printError('Invalid input: Missing arguments for cp');
 
   const sourcePath = path.resolve(get('currentDir'), sourcePathArg);
-  const destDir = path.resolve(get('currentDir'), destDirArg);
-  const destPath = path.resolve(destDir, path.basename(sourcePath));
+  let destPath = path.resolve(get('currentDir'), destArg); // Resolve potential destination path
 
   try {
     await fs.access(sourcePath, fs.constants.R_OK); // Check source exists and is readable
-    const destDirStat = await fs.stat(destDir);
-    if (!destDirStat.isDirectory()) throw new Error('Destination is not a directory');
+    const sourceStat = await fs.stat(sourcePath);
+    if (!sourceStat.isFile()) throw new Error('Source is not a file');
+
+    // Check if destination exists and is a directory
+    let destStat = null;
+    try {
+        destStat = await fs.stat(destPath);
+    } catch (statError) {
+        // If stat fails, destination likely doesn't exist, proceed
+    }
+
+    if (destStat && destStat.isDirectory()) {
+        // If destination is a directory, copy file inside it with original name
+        destPath = path.join(destPath, path.basename(sourcePath));
+    }
+    // If destination doesn't exist, destPath remains as resolved earlier
+    // If destination exists and is a file, createWriteStream with 'wx' will fail later
+
+    // Ensure the final destination directory exists before creating the stream
+    const finalDestDir = path.dirname(destPath);
+    await fs.mkdir(finalDestDir, { recursive: true });
 
     const readable = createReadStream(sourcePath);
     const writable = createWriteStream(destPath, { flags: 'wx' }); // 'wx' fails if destination exists
 
     await pipeline(readable, writable);
   } catch (err) {
+    // Provide more specific error if possible
+    if (err.message === 'Source is not a file') {
+        printError('Operation failed: Source is not a file');
+    } else if (err.code === 'EEXIST') {
+        printError('Operation failed: Destination file already exists');
+    } else {
     // console.error(err); // Debugging
     printError();
+    }
   }
 }
 
 export async function moveFile(args) {
-  const combinedArgs = args.join(' ');
-  const parts = combinedArgs.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g) || [];
+  const parsedArgs = parseArgsWithQuotes(args, 2, 'Invalid input: Expected mv <path_to_file> <path_to_new_directory>');
+  if (!parsedArgs) return;
 
-  if (parts.length !== 2) {
-    return printError('Invalid input: Expected mv <path_to_file> <path_to_new_directory>');
-  }
-
-  const sourcePathArg = parts[0].replace(/['"]/g, '');
-  const destDirArg = parts[1].replace(/['"]/g, '');
+  const [sourcePathArg, destDirArg] = parsedArgs;
 
   if (!sourcePathArg || !destDirArg) return printError('Invalid input: Missing arguments for mv');
 

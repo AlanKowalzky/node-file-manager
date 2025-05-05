@@ -5,32 +5,51 @@ import { createBrotliCompress, createBrotliDecompress } from 'zlib';
 import { pipeline } from 'stream/promises';
 import { get } from '../state.js';
 import { printError } from '../cli/ui.js';
+import { parseArgsWithQuotes } from '../utils/helpers.js'; // Import helper
 
 async function handleCompression(args, compress) {
-    const combinedArgs = args.join(' ');
-    const parts = combinedArgs.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g) || [];
-
     const operation = compress ? 'compress' : 'decompress';
     const expectedArgs = compress ? 'compress <path_to_file> <path_to_destination>' : 'decompress <path_to_file> <path_to_destination>';
 
-    if (parts.length !== 2) {
-        return printError(`Invalid input: Expected ${expectedArgs}`);
-    }
+    const parsedArgs = parseArgsWithQuotes(args, 2, `Invalid input: Expected ${expectedArgs}`);
+    if (!parsedArgs) return; // Error already printed
 
-    const sourcePathArg = parts[0].replace(/['"]/g, '');
-    const destPathArg = parts[1].replace(/['"]/g, '');
+    const [sourcePathArg, destPathArg] = parsedArgs;
 
     if (!sourcePathArg || !destPathArg) return printError(`Invalid input: Missing arguments for ${operation}`);
 
     const sourcePath = path.resolve(get('currentDir'), sourcePathArg);
     // Destination path should be treated as a full path including the desired output filename
-    const destPath = path.resolve(get('currentDir'), destPathArg);
+    let destPath = path.resolve(get('currentDir'), destPathArg);
 
     let readable;
     let writable;
     const brotliStream = compress ? createBrotliCompress() : createBrotliDecompress();
 
     try {
+        // Ensure source file exists and is readable
+        await fs.access(sourcePath, fs.constants.R_OK);
+        const sourceStat = await fs.stat(sourcePath); // Get source stats
+        if (!sourceStat.isFile()) throw new Error('Source is not a file');
+
+        // Check if resolved destination exists and is a directory
+        let destStat = null;
+        try {
+            destStat = await fs.stat(destPath);
+        } catch (statError) {
+            // If stat fails, destination likely doesn't exist, proceed
+        }
+
+        if (destStat && destStat.isDirectory()) {
+            // If destination is a directory, adjust the final destPath
+            let baseName = path.basename(sourcePath);
+            if (compress) {
+                baseName += '.br'; // Standard Brotli extension for compression
+            } else { // Decompression: try to remove known extensions
+                baseName = baseName.replace(/\.(br|zip)$/i, ''); // Remove .br or .zip
+            }
+            destPath = path.join(destPath, baseName); // Final path is inside the directory
+        }
         // Ensure source file exists and is readable
         await fs.access(sourcePath, fs.constants.R_OK);
 
@@ -56,8 +75,14 @@ async function handleCompression(args, compress) {
         if (err.code !== 'EEXIST') { // Don't try to remove if it failed because file exists
             try { await fs.unlink(destPath); } catch { /* Ignore unlink error */ }
         }
-        // console.error(err); // Debugging
-        printError(`Operation failed during ${operation}`);
+        if (err.message === 'Source is not a file') {
+             printError('Operation failed: Source is not a file');
+        } else if (err.code === 'EEXIST') {
+             printError('Operation failed: Destination file already exists');
+        } else {
+             // console.error(err); // Debugging
+             printError(`Operation failed during ${operation}`);
+        }
     }
 }
 

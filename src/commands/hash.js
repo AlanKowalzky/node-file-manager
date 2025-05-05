@@ -18,7 +18,7 @@ export async function calculateHash(args) {
         readable.on('data', (chunk) => hash.update(chunk));
 
         await new Promise((resolve, reject) => {
-            readable.on('end', () => resolve()); // Nie potrzebujemy przekazywać nic do resolve
+            readable.on('end', () => resolve(undefined)); // Nie potrzebujemy przekazywać nic do resolve
             readable.on('error', reject);
         });
 
