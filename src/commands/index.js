@@ -1,7 +1,7 @@
 import * as nwd from './nwd.js'
 import * as files from './basic.js';
 import * as osCmd from './os.js';
-// import * as hashCmd from './hash.js'; // TODO: Stworzyć plik hash.js i odkomentować ten import
+import * as hashCmd from './hash.js'; // Odkomentowano import
 import * as compressCmd from './compress.js';
 import * as meta from './meta.js'; // Importuj nowy moduł meta
 
@@ -23,7 +23,7 @@ const commandMap = {
   // OS
   os: osCmd.handleOsCommand,
   // Hash
-  // hash: hashCmd.calculateHash, // TODO: Odkomentować po stworzeniu hash.js
+  hash: hashCmd.calculateHash, // Odkomentowano użycie
   // Compress/Decompress
   compress: compressCmd.compressFile,
   decompress: compressCmd.decompressFile,
