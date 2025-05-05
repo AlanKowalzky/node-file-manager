@@ -1,0 +1,22 @@
+{
+  "name": "file-manager",
+  "version": "1.0.0",
+  "description": "Simple file manager",
+  "homepage": "https://github.com/AlanKowalzky/node-file-manager#readme",
+  "bugs": {
+    "url": "https://github.com/AlanKowalzky/node-file-manager/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlanKowalzky/node-file-manager.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+
+  }
+}
