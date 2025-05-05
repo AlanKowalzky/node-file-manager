@@ -1,8 +1,8 @@
 import * as nwd from './nwd.js'
-import * as basic from './basic.js';
-
+import * as files from './basic.js';
 import * as osCmd from './os.js';
-// Importuj inne moduły komend (hash, compress), gdy będą gotowe
+// import * as hashCmd from './hash.js'; // TODO: Stworzyć plik hash.js i odkomentować ten import
+import * as compressCmd from './compress.js';
 
 import { printInvalidInput, printError } from '../cli/ui.js';
 
@@ -11,21 +11,21 @@ const commandMap = {
   up: nwd.goUp,
   cd: nwd.changeDirectory,
   ls: nwd.listDirectory,
-  // Basic
-  cat: basic.readFileContent,
-  add: basic.createEmptyFile,
-  mkdir: basic.createDirectory,
-  rn: basic.renameFile,
-  cp: basic.copyFileCmd, // Zmieniono nazwę, aby uniknąć konfliktu
-  mv: basic.moveFile,
-  rm: basic.deleteFile,
+  // File operations
+  cat: files.readFileContent,
+  add: files.createEmptyFile,
+  mkdir: files.createDirectory,
+  rn: files.renameFile,
+  cp: files.copyFileCmd,
+  mv: files.moveFile,
+  rm: files.deleteFile,
   // OS
   os: osCmd.handleOsCommand,
-  // TODO: Hash
-  // hash: hashCmd.calculateHash,
-  // TODO: Compress/Decompress
-  // compress: compressCmd.compressFile,
-  // decompress: compressCmd.decompressFile,
+  // Hash
+  // hash: hashCmd.calculateHash, // TODO: Odkomentować po stworzeniu hash.js
+  // Compress/Decompress
+  compress: compressCmd.compressFile,
+  decompress: compressCmd.decompressFile,
 };
 
 export async function handleCommand(line) {
