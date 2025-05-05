@@ -1,5 +1,5 @@
 export function showHelp() {
-    console.log(`
+  console.log(`
 Available commands:
 
   Navigation & Working Directory:
@@ -22,6 +22,9 @@ Available commands:
     os --homedir             - Show home directory
     os --username            - Show system username
     os --architecture        - Show CPU architecture
+
+  Hash Calculation:
+    hash <path_to_file>      - Calculate SHA256 hash for file
 
   Compression:
     compress <path_to_file> <path_to_destination> - Compress file (Brotli)

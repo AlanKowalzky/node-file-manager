@@ -1,5 +1,5 @@
-import os from 'os';
-import { getUsername } from './cli/args.js';
+import os from "os";
+import { getUsername } from "./cli/args.js";
 
 const state = {
   username: getUsername(),
@@ -10,8 +10,7 @@ const state = {
 export const get = (key) => state[key];
 
 export const set = (key, value) => {
-  if (key === 'currentDir') {
+  if (key === "currentDir") {
     state.currentDir = value;
   }
-  // Można dodać walidację lub inne klucze w przyszłości
 };

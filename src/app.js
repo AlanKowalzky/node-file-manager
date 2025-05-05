@@ -1,7 +1,7 @@
-import readline from 'readline';
-import process from 'process';
-import { printWelcome, printCurrentDir, printGoodbye } from './cli/ui.js';
-import { handleCommand } from './commands/index.js';
+import readline from "readline";
+import process from "process";
+import { printWelcome, printCurrentDir, printGoodbye } from "./cli/ui.js";
+import { handleCommand } from "./commands/index.js";
 
 export function startApp() {
   printWelcome();
@@ -10,25 +10,25 @@ export function startApp() {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
-    prompt: '> ' // Dodano prosty prompt dla lepszej czytelności
+    prompt: "> ",
   });
 
   rl.prompt();
 
-  rl.on('line', async (line) => {
-    if (line.trim() === '.exit') {
+  rl.on("line", async (line) => {
+    if (line.trim() === ".exit") {
       rl.close();
       return;
     }
     await handleCommand(line);
-    printCurrentDir(); // Show current dir after each command
+    printCurrentDir();
     rl.prompt();
   });
 
-  rl.on('close', () => {
+  rl.on("close", () => {
     printGoodbye();
     process.exit(0);
   });
 
-  process.on('SIGINT', () => rl.close()); // Handle Ctrl+C gracefully
+  process.on("SIGINT", () => rl.close());
 }
