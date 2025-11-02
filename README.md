@@ -1,4 +1,3 @@
-Sure! Here's a professional `README.md` in English in markdown format for your **File Manager** project:
 
 ---
 
@@ -86,7 +85,7 @@ Supports file operations, navigation, system information retrieval, hashing, com
 | -------------- | ------------- |
 | Basic Scope    | 280           |
 | Advanced Scope | 90            |
-| **Total**      | **348 / 348** |
+| **Total**      | **330 / 330** |
 | Forfeits       | 0             |
 
 ---
